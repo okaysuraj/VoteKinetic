@@ -36,20 +36,31 @@ Database setup needs a PostgreSQL password in backend/.env
 }
 
 async function run() {
-  const defaultClient = new Client(getDbConfig('postgres'));
-  await defaultClient.connect();
+  let client;
 
-  const dbName = process.env.DB_NAME || 'voting_system';
-  
-  const res = await defaultClient.query(`SELECT datname FROM pg_catalog.pg_database WHERE datname = '${dbName}'`);
-  if (res.rowCount === 0) {
-    console.log(`Creating database ${dbName}...`);
-    await defaultClient.query(`CREATE DATABASE ${dbName}`);
+  if (process.env.DATABASE_URL) {
+    console.log('Connecting to Neon Database using DATABASE_URL...');
+    client = new Client({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+  } else {
+    const defaultClient = new Client(getDbConfig('postgres'));
+    await defaultClient.connect();
+
+    const dbName = process.env.DB_NAME || 'voting_system';
+    
+    const res = await defaultClient.query(`SELECT datname FROM pg_catalog.pg_database WHERE datname = '${dbName}'`);
+    if (res.rowCount === 0) {
+      console.log(`Creating database ${dbName}...`);
+      await defaultClient.query(`CREATE DATABASE ${dbName}`);
+    }
+    await defaultClient.end();
+
+    client = new Client(getDbConfig(dbName));
+    await client.connect();
   }
-  await defaultClient.end();
-
-  const client = new Client(getDbConfig(dbName));
-  await client.connect();
 
   const schemaPath = path.join(__dirname, '../database/schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');

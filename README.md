@@ -19,7 +19,7 @@ Vote Kinetic is a production-ready, cryptographic voting platform featuring a se
 
 Please see the `/docs` folder for detailed setup and API instructions.
 
-1. **Database Setup**: Use Docker Compose to spin up the PostgreSQL database (`docker compose up -d`).
+1. **Database Setup**: Set up your database in Neon Postgres Cloud and configure the `DATABASE_URL` inside `backend/.env`. Initialize and seed the database by running `npm run db:setup` inside `/backend`.
 2. **Backend**: Navigate to `/backend`, run `npm install`, and start the server with `npm run dev`.
 3. **Frontend**: Navigate to `/frontend`, run `npm install`, and start the dev server with `npm run dev`.
 4. **Mobile**: Navigate to `/mobile`, run `npm install`, and start the Metro bundler with `npx expo start`.

@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  firebaseUid  String   @unique
+  email        String   @unique
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isActive     Boolean  @default(true)
+
+  roles        UserRole[]
+  auditLogs    AuditLog[]
+}
+
+model Organization {
+  id           String   @id @default(uuid())
+  name         String
+  domain       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users        UserRole[]
+  elections    Election[]
+}
+
+model Role {
+  id           String   @id @default(uuid())
+  name         String   @unique // e.g. SUPER_ADMIN, ORG_ADMIN, ELECTION_ADMIN, VOTER, AUDITOR, OBSERVER
+  permissions  String[] // Array of permission strings
+  
+  users        UserRole[]
+}
+
+model UserRole {
+  id             String       @id @default(uuid())
+  userId         String
+  roleId         String
+  organizationId String?
+  electionId     String?
+
+  user           User         @relation(fields: [userId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  election       Election?    @relation(fields: [electionId], references: [id])
+
+  @@unique([userId, roleId, organizationId, electionId])
+}
+
+model Election {
+  id              String   @id @default(uuid())
+  organizationId  String
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  status          String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED, CLOSED, CANCELLED
+  type            String   @default("SINGLE_CHOICE") // SINGLE_CHOICE, MULTI_CHOICE, RANKED
+  publicKey       String   // Public key for encrypting votes
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  candidates      Candidate[]
+  eligibility     Eligibility[]
+  tokens          VotingToken[]
+  votes           EncryptedVote[]
+  userRoles       UserRole[]
+}
+
+model Candidate {
+  id          String   @id @default(uuid())
+  electionId  String
+  name        String
+  bio         String?
+  imageUrl    String?
+
+  election    Election @relation(fields: [electionId], references: [id])
+}
+
+model Eligibility {
+  id          String   @id @default(uuid())
+  electionId  String
+  email       String
+  hasVoted    Boolean  @default(false)
+
+  election    Election @relation(fields: [electionId], references: [id])
+  @@unique([electionId, email])
+}
+
+model VotingToken {
+  id          String   @id @default(uuid())
+  electionId  String
+  tokenHash   String   @unique // Hashed version of the token sent to the user
+  expiresAt   DateTime
+  isUsed      Boolean  @default(false)
+  usedAt      DateTime?
+
+  election    Election @relation(fields: [electionId], references: [id])
+}
+
+model EncryptedVote {
+  id          String   @id @default(uuid())
+  electionId  String
+  encryptedPayload String // The encrypted choice(s)
+  voteHash    String   @unique // Hash of the encrypted payload for integrity
+  submittedAt DateTime @default(now())
+
+  election    Election @relation(fields: [electionId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  entityType  String
+  entityId    String
+  userId      String?
+  details     String? // JSON string
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+}

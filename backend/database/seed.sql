@@ -1,1 +1,0 @@
--- Run `npm run db:setup` in the backend folder to seed users and sample data.

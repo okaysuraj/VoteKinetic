@@ -15,15 +15,21 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   isActive     Boolean  @default(true)
+  preferences  Json?    // Stores user preferences (language, theme, notifications)
 
   roles        UserRole[]
   auditLogs    AuditLog[]
+  notifications Notification[]
 }
 
 model Organization {
   id           String   @id @default(uuid())
   name         String
   domain       String?
+  timezone     String   @default("UTC")
+  currency     String   @default("USD")
+  logoUrl      String?
+  settings     Json?    // Org-level settings (twoFactor, ipWhitelisting, etc.)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -64,6 +70,7 @@ model Election {
   status          String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED, CLOSED, CANCELLED
   type            String   @default("SINGLE_CHOICE") // SINGLE_CHOICE, MULTI_CHOICE, RANKED
   publicKey       String   // Public key for encrypting votes
+  encryptedPrivateKey String? // Encrypted private key for tallying
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -82,6 +89,7 @@ model Candidate {
   name        String
   bio         String?
   imageUrl    String?
+  order       Int      @default(0)
 
   election    Election @relation(fields: [electionId], references: [id])
 }
@@ -128,4 +136,30 @@ model AuditLog {
   createdAt   DateTime @default(now())
 
   user        User?    @relation(fields: [userId], references: [id])
+}
+
+model PlatformSettings {
+  id                    String   @id @default(uuid())
+  maintenanceMode       Boolean  @default(false)
+  defaultTimezone       String   @default("UTC")
+  auditLogRetention     String   @default("7_YEARS")
+  sessionTimeoutMinutes Int      @default(15)
+  encryptionStrength    String   @default("AES_256")
+  biometricEnforcement  Boolean  @default(true)
+  ipWhitelisting        Boolean  @default(true)
+  fraudDetection        Boolean  @default(false)
+  updatedAt             DateTime @updatedAt
+  createdAt             DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  content     String
+  type        String   @default("info") // info, security, analytics, ballot, admin
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
 }

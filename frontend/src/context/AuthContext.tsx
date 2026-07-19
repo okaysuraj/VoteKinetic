@@ -5,7 +5,7 @@ import { auth } from '../firebase';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  role: 'VOTER' | 'ADMIN' | 'SUPER_ADMIN' | null;
+  role: 'VOTER' | 'ADMIN' | 'SUPER_ADMIN' | 'ORG_ADMIN' | 'OBSERVER' | null;
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -16,16 +16,34 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<'VOTER' | 'ADMIN' | 'SUPER_ADMIN' | null>(null);
+  const [role, setRole] = useState<'VOTER' | 'ADMIN' | 'SUPER_ADMIN' | 'ORG_ADMIN' | 'OBSERVER' | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        // Mocking role fetch - in reality, we fetch from our backend postgres
-        if (user.email?.includes('admin')) {
-          setRole('ADMIN');
-        } else {
+        try {
+          const token = await user.getIdToken();
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/users/sync`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await response.json();
+          const userRoles = data.user?.roles?.map((r: any) => r.role?.name) || [];
+          
+          if (userRoles.includes('SUPER_ADMIN')) {
+            setRole('SUPER_ADMIN');
+          } else if (userRoles.includes('ORG_ADMIN') || userRoles.includes('ADMIN')) {
+            setRole('ORG_ADMIN');
+          } else if (userRoles.includes('OBSERVER')) {
+            setRole('OBSERVER');
+          } else {
+            setRole('VOTER');
+          }
+        } catch (error) {
+          console.error("Failed to sync user", error);
           setRole('VOTER');
         }
       } else {

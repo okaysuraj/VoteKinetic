@@ -2,11 +2,26 @@ import { Router } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.middleware';
 import { prisma } from '../db/prisma';
 import crypto from 'crypto';
+import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
+import RedisStore from 'rate-limit-redis';
+import { redisClient } from '../config/redis';
 
 const router = Router();
 
+const voteLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
+  }),
+  message: { error: 'Too many voting requests, please try again later.' }
+});
+
 // Step 1: Request a voting token
-router.post('/token', requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post('/token', requireAuth, voteLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const { electionId } = req.body;
     const userEmail = req.user!.email!;
@@ -33,12 +48,26 @@ router.post('/token', requireAuth, async (req: AuthenticatedRequest, res) => {
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
-    await prisma.votingToken.create({
-      data: {
-        electionId,
-        tokenHash,
-        expiresAt
-      }
+    await prisma.$transaction(async (tx) => {
+      await tx.votingToken.create({
+        data: {
+          electionId,
+          tokenHash,
+          expiresAt
+        }
+      });
+
+      await tx.eligibility.update({
+        where: {
+          electionId_email: {
+            electionId,
+            email: userEmail
+          }
+        },
+        data: {
+          hasVoted: true
+        }
+      });
     });
 
     // Return the raw token (only sent once to client)
@@ -49,7 +78,7 @@ router.post('/token', requireAuth, async (req: AuthenticatedRequest, res) => {
 });
 
 // Step 2: Submit an encrypted vote
-router.post('/submit', async (req, res) => {
+router.post('/submit', voteLimiter, async (req, res) => {
   try {
     const { electionId, token, encryptedPayload } = req.body;
 
@@ -86,9 +115,6 @@ router.post('/submit', async (req, res) => {
           voteHash
         }
       });
-      
-      // Note: We should ideally update Eligibility.hasVoted here if we map the token back to the user,
-      // but to maintain extreme anonymity, this architecture decouples them completely.
     });
 
     res.json({ success: true, receipt: voteHash });

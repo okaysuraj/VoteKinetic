@@ -6,15 +6,19 @@ dotenv.config();
 let firebaseApp: admin.app.App | null = null;
 
 try {
-  // If FIREBASE_SERVICE_ACCOUNT is provided as a JSON string
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+    const serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    };
+    
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
-    console.log('✅ Firebase Admin initialized with service account.');
+    console.log('✅ Firebase Admin initialized with individual keys.');
   } else {
-    console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT not found in environment. Firebase Admin is NOT initialized.');
+    console.warn('⚠️ FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, or FIREBASE_CLIENT_EMAIL not found in environment. Firebase Admin is NOT initialized.');
   }
 } catch (error) {
   console.error('❌ Failed to initialize Firebase Admin:', error);

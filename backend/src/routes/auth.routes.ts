@@ -18,6 +18,13 @@ router.post('/sync', requireAuth, async (req: AuthenticatedRequest, res) => {
       create: {
         firebaseUid: uid,
         email: email || '',
+      },
+      include: {
+        roles: {
+          include: {
+            role: true
+          }
+        }
       }
     });
 

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Network from 'expo-network';
+import { API_URL } from '../config/api';
 
 const QUEUE_KEY = '@vote_queue';
 
@@ -54,7 +55,7 @@ export class OfflineSyncService {
   }
 
   private static async sendToServer(vote: any) {
-    const res = await fetch('http://localhost:3000/api/vote/submit', {
+    const res = await fetch(`${API_URL}/vote/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(vote)

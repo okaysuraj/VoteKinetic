@@ -3,17 +3,87 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-  }
-
   body {
-    @apply bg-background text-foreground antialiased selection:bg-blue-500/30;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f9f9fc;
+    color: #1a1c1e;
+    font-family: 'Public Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+.security-scan-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #659dfe, transparent);
+  animation: scan 3s linear infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-20px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(180px); opacity: 0; }
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #f3f3f6 25%, #e8e8ea 50%, #f3f3f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.receipt-tear {
+  background-image: radial-gradient(circle, transparent 70%, #eeeef0 70%);
+  background-size: 20px 20px;
+  background-position: 0 -10px;
+  height: 10px;
+  width: 100%;
+}
+
+.receipt-tear-bottom {
+  background-image: radial-gradient(circle, transparent 70%, #ffffff 70%);
+  background-size: 20px 20px;
+  background-position: 0 10px;
+  height: 10px;
+  width: 100%;
+}
+
+@media print {
+  .no-print { display: none; }
+  .receipt-shadow { box-shadow: none !important; border: 1px solid #DDE2E5; }
+}
+
+.bento-card {
+  background-color: #ffffff;
+  border: 1px solid #c4c6d2; /* outline-variant */
+  transition: all 0.2s ease-in-out;
+}
+.bento-card:hover {
+  border-color: #747781; /* outline */
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f3f5;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c4c6d2;
+  border-radius: 10px;
+}
+
+.settings-card {
+  border: 1px solid #DDE2E5;
+  transition: all 0.2s ease;
+}
+.settings-card:focus-within {
+  border-color: #115cb9;
+  box-shadow: 0 0 0 2px rgba(17, 92, 185, 0.1);
 }

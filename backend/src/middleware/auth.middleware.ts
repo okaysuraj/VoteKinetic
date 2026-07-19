@@ -1,21 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { admin, firebaseApp } from '../config/firebase';
 
+import { User } from '@prisma/client';
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     uid: string;
     email?: string;
   };
+  dbUser?: User;
 }
 
 export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
+  let token = '';
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split('Bearer ')[1];
+  } else if (req.query.token && typeof req.query.token === 'string') {
+    token = req.query.token;
   }
 
-  const token = authHeader.split('Bearer ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  }
 
   if (!firebaseApp) {
     console.error('Firebase Admin not initialized');

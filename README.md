@@ -1,5 +1,7 @@
 # Vote Kinetic
 
+**Live Website:** [https://votekinetic.netlify.app](https://votekinetic.netlify.app)
+
 Vote Kinetic is a cryptographic voting platform featuring a secure Node.js backend, a responsive React web interface, and a native React Native (Expo) mobile companion app.
 
 ---
